@@ -1,26 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
+User = get_user_model() 
 
-class Student(AbstractUser):
-    name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-
-    groups = models.ManyToManyField(
-        'auth.Group',
-        verbose_name='groups',
-        blank=True,
-        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-        related_name="student_set",
-        related_query_name="student",
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        verbose_name='user permissions',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        related_name="student_set",
-        related_query_name="student",
-    )
+class Student(models.Model):
+    user = models.ForeignKey(User,on_delete=models.CASCADE, null=True)
 
 
 class Course(models.Model):
