@@ -1,8 +1,8 @@
 # serializers.py
 from rest_framework import serializers
-from .models import CourseSchedule, Course
-from .models import Course, Prerequisite,Student
-
+from .models import CourseSchedule, Course,Student
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 class CourseScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseSchedule
@@ -22,15 +22,30 @@ class CourseSerializer(serializers.ModelSerializer):
         course.prerequisites.set(prerequisites_data) 
         return course
 
-class RegisterSerializer(serializers.Serializer):
-    class Meta:
-        model = Student
-        fields = ['id','password','email','name']
 
-from rest_framework import serializers
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.views import ObtainAuthToken
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password']
+
+    def create(self, validated_data):
+        # Securely set the password
+        user = User(
+            username=validated_data['username'],
+            email=validated_data['email']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+
+        # Create a Student associated with this user
+        Student.objects.create(user=user)
+
+        return user
+
+        
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
@@ -51,5 +66,7 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Unable to log in with provided credentials.")
         else:
             raise serializers.ValidationError("Must include 'username' and 'password'.")
-
+        
+        print(data)
         return data
+

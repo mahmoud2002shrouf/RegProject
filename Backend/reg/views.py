@@ -1,63 +1,209 @@
 # views.py
-from rest_framework import status
-from rest_framework.decorators import APIView,api_view
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from .models import CourseSchedule, Course,Student
-from .serializers import CourseScheduleSerializer, CourseSerializer,RegisterSerializer
+from .serializers import CourseScheduleSerializer, CourseSerializer, RegisterSerializer,LoginSerializer
 from django.contrib.auth.models import User
+from rest_framework import status
+from django.db.models import Q
+from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from .permissions import IsSuperUser  
+from .models import Course, StudentRegistration, Student,CourseSchedule
+
+
+#اضافة مواعيد 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSuperUser])
 def add_course_schedule(request):
     serializer = CourseScheduleSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-def get_all_course_schedules(request):
-    schedules = CourseSchedule.objects.all()
-    serializer = CourseScheduleSerializer(schedules, many=True)
-    return Response(serializer.data)
-
+#اضافة كورسات جديدة
 @api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSuperUser])
 def add_course(request):
     serializer = CourseSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+#جلب كل المواعيد
+@api_view(['GET'])
+def get_all_course_schedules(request):
+    schedules = CourseSchedule.objects.all()
+    serializer = CourseScheduleSerializer(schedules, many=True)
+    return Response(serializer.data)
+#جلب كل الكورسات
 @api_view(['GET'])
 def get_all_courses(request):
     courses = Course.objects.all()
     serializer = CourseSerializer(courses, many=True)
     return Response(serializer.data)
+#جلب كورس معين
+@api_view(['GET'])
+def get_course_by_id(request, course_id):
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = CourseSerializer(course)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+#تسجيل طالب جديد
 class Register(APIView):
+    @permission_classes([AllowAny])
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            
-            if User.objects.filter(username=request.data['username']).exists():
-                return Response({'message': 'User already exists'}, status=400)
-
-            user = User.objects.create_user(username=request.data['username'], email=request.data['email'])
-            student = Student.objects.create(user=user)
-            
-            return Response(serializer.data, status=201)
+            user = serializer.save()
+            response_serializer = RegisterSerializer(user)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=400)
-from rest_framework.response import Response
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.views import ObtainAuthToken
-from .serializers import LoginSerializer
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CustomAuthToken(ObtainAuthToken):
-    def post(self, request, *args, **kwargs):
+#تسجيل الدخول سواء طالب او ادمن
+class Login(APIView):
+    @permission_classes([AllowAny])
+    def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
+            return Response({'token': token.key, 'username': user.username, 'is_superuser': user.is_superuser, "userId": user.id}, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+#البحث عن كورس معين من خلال الكود او اسم المدرب او اسم الكورس
+@api_view(['GET'])
+def search_courses(request):
+    query = request.query_params.get('query', '')
+    if query:
+        courses = Course.objects.filter(
+            Q(code__icontains=query) | 
+            Q(name__icontains=query) | 
+            Q(instructor__icontains=query)
+        )
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+    else:
+        return Response({"error": "No search query provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+#تسجيل خروج
+
+@api_view(['POST'])
+def logout(request):
+    try:
+        token = request.auth
+        if token:
+            token.delete()
+            return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No token found.'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#تسجيل كورس للطالب مع مراعات القيود المفروضة :1-ان يكون طالب--2-ان يكون قد قام بتسجيل الدخول--3-ان يكون انهى المتطلبات--4-ان يكون موعد الكورس لا يتضارب مع موعد كورس اخر--5-ان يكون لم يثم بتسجيل الكورس من قبل
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def register_course_for_student(request):
+    user = request.user
+    if user.is_superuser:
+        return Response({'error': 'Superuser cannot register for courses.'}, status=status.HTTP_403_FORBIDDEN)
+
+    course_id = request.data.get('course_id')
+    student_id = request.data.get('student_id')
+
+    # تحقق من وجود الطالب ومطابقة معرف المستخدم
+    try:
+        student = Student.objects.get(user_id=student_id)
+    except Student.DoesNotExist:
+        return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if student.user_id != user.id:
+        return Response({'error': 'Unauthorized access.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # تحقق من وجود الكورس
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # تحقق مما إذا كان الكورس مسجل بالفعل
+    if StudentRegistration.objects.filter(studentId=student, courseId=course).exists():
+        return Response({'error': 'Course already registered.'}, status=status.HTTP_409_CONFLICT)
+
+    # تحقق من استيفاء المتطلبات السابقة
+    prerequisites = course.prerequisites.all()
+    completed_courses_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId_id', flat=True)
+    completed_courses = Course.objects.filter(id__in=completed_courses_ids)
+    if not all(prerequisite in completed_courses for prerequisite in prerequisites):
+        return Response({'error': 'Prerequisites not met.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # تحقق من تضارب المواعيد
+    existing_schedules = CourseSchedule.objects.filter(course__studentregistration__studentId=student)
+    new_course_schedule = course.scheduleId
+    for schedule in existing_schedules:
+        if (new_course_schedule.days == schedule.days and
+            not (new_course_schedule.endTime <= schedule.startTime or new_course_schedule.startTime >= schedule.endTime)):
+            return Response({'error': 'Schedule conflict.'}, status=status.HTTP_409_CONFLICT)
+
+    # تسجيل الكورس
+    StudentRegistration.objects.create(studentId=student, courseId=course)
+    return Response({'message': 'Course registered successfully.'}, status=status.HTTP_201_CREATED)
+
+#جلب الكورسات التي سجلها الطالب
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_student_courses(request):
+    user = request.user
+
+    # تحقق مما إذا كان المستخدم طالبا
+    try:
+        student = Student.objects.get(user=user)
+    except Student.DoesNotExist:
+        return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # جلب الكورسات المسجلة
+    student_courses = StudentRegistration.objects.filter(studentId=student).select_related('courseId')
+    courses = [registration.courseId for registration in student_courses]
+
+    # تسلسل الكورسات
+    serializer = CourseSerializer(courses, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+#جلب فقط الكورسات التي انهى الطالب متطلباتها
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_courses_with_completed_prerequisites(request):
+    user = request.user
+
+    # تحقق مما إذا كان المستخدم طالبا
+    try:
+        student = Student.objects.get(user=user)
+    except Student.DoesNotExist:
+        return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # جلب معرفات الكورسات التي سجلها الطالب
+    completed_course_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId', flat=True)
+
+    # جلب جميع الكورسات المتاحة
+    all_courses = Course.objects.all()
+
+    # جلب الكورسات التي أنهى الطالب متطلباتها
+    eligible_courses = []
+    for course in all_courses:
+        prerequisites = course.prerequisites.all()
+        if all(prerequisite.id in completed_course_ids for prerequisite in prerequisites):
+            eligible_courses.append(course)
+
+    # تسلسل الكورسات المؤهلة
+    serializer = CourseSerializer(eligible_courses, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
