@@ -2,7 +2,7 @@
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from .serializers import CourseScheduleSerializer, CourseSerializer, RegisterSerializer,LoginSerializer
+from .serializers import CourseScheduleSerializer, CourseSerializer, RegisterSerializer,LoginSerializer,StudentSerializer,CourseSerializerTow
 from django.contrib.auth.models import User
 from rest_framework import status
 from django.db.models import Q
@@ -10,6 +10,8 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from .permissions import IsSuperUser  
 from .models import Course, StudentRegistration, Student,CourseSchedule
+from django.utils import timezone
+from datetime import timedelta
 
 
 #اضافة مواعيد 
@@ -43,6 +45,8 @@ def get_all_courses(request):
     serializer = CourseSerializer(courses, many=True)
     return Response(serializer.data)
 #جلب كورس معين
+
+
 @api_view(['GET'])
 def get_course_by_id(request, course_id):
     try:
@@ -50,8 +54,24 @@ def get_course_by_id(request, course_id):
     except Course.DoesNotExist:
         return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = CourseSerializer(course)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    # Serialize the course data, including prerequisites
+    course_serializer = CourseSerializerTow(course)
+    
+    # Get the students registered for this course
+    registered_students = StudentRegistration.objects.filter(courseId=course).select_related('studentId__user')
+    students = [registration.studentId for registration in registered_students]
+    
+    # Serialize the student data
+    student_serializer = StudentSerializer(students, many=True)
+    
+    # Prepare the response data
+    response_data = {
+        'course': course_serializer.data,
+        'registered_students': student_serializer.data,
+        'total_registered_students': len(students)
+    }
+    
+    return Response(response_data, status=status.HTTP_200_OK)
 
 
 #تسجيل طالب جديد
@@ -180,30 +200,42 @@ def get_student_courses(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 #جلب فقط الكورسات التي انهى الطالب متطلباتها
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Student, StudentRegistration, Course
+from .serializers import CourseSerializer
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_courses_with_completed_prerequisites(request):
     user = request.user
 
-    # تحقق مما إذا كان المستخدم طالبا
     try:
         student = Student.objects.get(user=user)
     except Student.DoesNotExist:
         return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # جلب معرفات الكورسات التي سجلها الطالب
-    completed_course_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId', flat=True)
+    registered_course_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId', flat=True)
 
-    # جلب جميع الكورسات المتاحة
-    all_courses = Course.objects.all()
+    all_courses = Course.objects.exclude(id__in=registered_course_ids)
 
-    # جلب الكورسات التي أنهى الطالب متطلباتها
     eligible_courses = []
     for course in all_courses:
         prerequisites = course.prerequisites.all()
-        if all(prerequisite.id in completed_course_ids for prerequisite in prerequisites):
+        if all(prerequisite.id in registered_course_ids for prerequisite in prerequisites):
             eligible_courses.append(course)
 
-    # تسلسل الكورسات المؤهلة
     serializer = CourseSerializer(eligible_courses, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+@api_view(['GET'])
+def get_recent_courses(request):
+    ten_days_ago = timezone.now() - timedelta(days=10)
+    recent_courses = Course.objects.filter(created_at__gte=ten_days_ago)
+    
+    notifications = [
+        f"A new course called {course.name} has been launched " for course in recent_courses
+    ]
+    
+    return Response(notifications, status=status.HTTP_200_OK)

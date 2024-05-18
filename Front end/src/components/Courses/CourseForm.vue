@@ -65,8 +65,8 @@
         v-model="prerequisites.val"
         @blur="clearValidity('prerequisites')"
       >
-        <option v-for="co in getAllCource" :key="co" :value="parseInt(co.id, 10)+1">
-          Name : {{ co.name }} - code : {{ co.courceCode }} 
+        <option v-for="co in getAllCource" :key="co" :value="co.id">
+          Name : {{ co.name }} - code : {{ co.courceCode }} - id : {{ co.id }} 
         </option>
 
       </select>
@@ -139,29 +139,40 @@ export default {
       if (this.courceCode.val === '') {
         this.courceCode.isValid = false;
         this.formIsValid = false;
+        console.log('1')
       }
       if (this.name.val === '') {
         this.name.isValid = false;
         this.formIsValid = false;
+        console.log('2')
+
       }
       if (this.description.val === '') {
         this.description.isValid = false;
         this.formIsValid = false;
+        console.log('3')
+
       }
       if (this.instructorName.val === '') {
         this.instructorName.isValid = false;
         this.formIsValid = false;
+        console.log('4')
+
       }
 
       if (this.capacity.val <= 0) {
         this.capacity.isValid = false;
         this.formIsValid = false;
+        console.log('5')
+
       }
-      if (this.prerequisites.val.length === 0) {
+      if (this.prerequisites.val.length < 0) {
         this.prerequisites.isValid = false;
         this.formIsValid = false;
+        console.log('6')
+
       }
-      if (this.schedule.val.length > 0) {
+      if (this.schedule.val.length < 0) {
         this.schedule.isValid = false;
         this.formIsValid = false;
       }

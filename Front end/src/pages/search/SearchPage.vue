@@ -16,7 +16,6 @@
         </div>
         <ul v-if="courses">
           <CourseItem
-
             v-for="course in courses"
             :key="course.id"
             :id="course.id"
@@ -24,7 +23,7 @@
             :name="course.name"
             :prerequisites="course.prerequisites"
             :schedule="course.schedule"
-            :my="true"
+
           ></CourseItem>
         </ul>
         <h3 v-else>No courses found.</h3>
@@ -65,8 +64,6 @@ export default {
     async loadCourse(refresh = false) {
       this.isLoading = true;
       try {
-        await this.$store.dispatch('course/myCource')
-      
         await this.$store.dispatch('schedule/fetchschedule');
         await this.$store.dispatch('course/loadCourses', {
           forceRefresh: refresh,

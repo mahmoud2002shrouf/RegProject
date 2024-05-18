@@ -8,11 +8,11 @@
     </base-dialog>
     <base-card>
       <form @submit.prevent="submitForm">
-        <div class="form-control" v-show="!vis">
+        <div class="form-control">
           <label for="name">Name</label>
           <input type="text" id="name" v-model.trim="name" />
         </div>
-        <div class="form-control">
+        <div class="form-control" v-show="!vis">
           <label for="email">E-Mail</label>
           <input type="email" id="email" v-model.trim="email" />
         </div>
@@ -24,7 +24,9 @@
           Please enter a valid email and password (must be at least 6 characters
           long).
         </p>
+        <!-- <router-link :to="paths"> -->
         <base-button>{{ submitButtonCaption }}</base-button>
+        <!-- </router-link> -->
         <base-button type="button" mode="flat" @click="switchAuthMode">{{
           switchModeButtonCaption
         }}</base-button>
@@ -62,16 +64,19 @@ export default {
         return 'Login instead';
       }
     },
+    paths() {
+      if (this.error !== null) {
+        return '/' + 'courses';
+      } else {
+        return false;
+      }
+    },
   },
   methods: {
     async submitForm() {
       this.formIsValid = true;
       if (this.submitButtonCaption === 'Login') {
-        if (
-          this.email === '' ||
-          !this.email.includes('@') ||
-          this.password.length < 6
-        ) {
+        if (this.name === '' || this.password.length < 6) {
           this.formIsValid = false;
           return;
         }
@@ -90,26 +95,26 @@ export default {
       this.isLoading = true;
       let actionPayload;
       if (this.mode === 'login') {
-         actionPayload = {
-          email: this.email,
+        actionPayload = {
+          username: this.name,
           password: this.password,
         };
-      }else{
-         actionPayload = {
-          email: this.email,
+      } else {
+        actionPayload = {
+          username: this.name,
           password: this.password,
-          name:this.name
+          email: this.email,
         };
       }
 
       try {
         if (this.mode === 'login') {
           await this.$store.dispatch('login', actionPayload);
+          this.$router.push('/courses');
         } else {
           await this.$store.dispatch('signup', actionPayload);
+          this.mode='signup'
         }
-        const redirectUrl = '/' + (this.$route.query.redirect || 'courses');
-        this.$router.replace(redirectUrl);
       } catch (err) {
         this.error = err.message || 'Failed to authenticate, try later.';
       }
