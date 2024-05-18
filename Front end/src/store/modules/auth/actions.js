@@ -1,98 +1,99 @@
-let timer;
-
 export default {
   async login(context, payload) {
     return context.dispatch('auth', {
       ...payload,
-      mode: 'login'
+      mode: 'login',
     });
   },
   async signup(context, payload) {
+    console.log(payload);
     return context.dispatch('auth', {
       ...payload,
-      mode: 'signup'
+      mode: 'signup',
     });
   },
   async auth(context, payload) {
     const mode = payload.mode;
-    let url =
-      'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyC1vTbhccp4Gl_FCDzsrnRustlzHesYZDw';
+    let url = 'http://127.0.0.1:8000/api/login/';
 
     if (mode === 'signup') {
-      url =
-        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyC1vTbhccp4Gl_FCDzsrnRustlzHesYZDw';
+      url = 'http://127.0.0.1:8000/api/register/';
     }
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         email: payload.email,
         password: payload.password,
-        name:payload.name,
-        returnSecureToken: true
-      })
+        username: payload.username,
+        // returnSecureToken: true,
+      }),
     });
 
     const responseData = await response.json();
+    console.log(responseData);
 
     if (!response.ok) {
       const error = new Error(
         responseData.message || 'Failed to authenticate. Check your login data.'
       );
       throw error;
-    }
-
-    const expiresIn = +responseData.expiresIn * 1000;
-    const expirationDate = new Date().getTime() + expiresIn;
-
-    localStorage.setItem('token', responseData.idToken);
-    localStorage.setItem('userId', responseData.localId);
-    localStorage.setItem('tokenExpiration', expirationDate);
-
-    timer = setTimeout(function() {
-      context.dispatch('autoLogout');
-    }, expiresIn);
-
+    } else {
+      localStorage.setItem('token', responseData.token);
+      localStorage.setItem('userId', responseData.userId);
+      localStorage.setItem('is_superuser', responseData.is_superuser);}
+    
     context.commit('setUser', {
-      token: responseData.idToken,
-      userId: responseData.localId
+      token: responseData.token,
+      userId: responseData.userId,
+      is_superuser: responseData.is_superuser,
     });
+      context.dispatch('course/loadCourses', {
+        forceRefresh: true,
+      });
+    
   },
   tryLogin(context) {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
-    const tokenExpiration = localStorage.getItem('tokenExpiration');
+    const is_superuser =
+      localStorage.getItem('is_superuser') === 'true' ? true : false;
+    // console.log("pppppppppppppppppppp",is_superuser )
 
-    const expiresIn = +tokenExpiration - new Date().getTime();
-
-    if (expiresIn < 0) {
-      return;
-    }
-
-    timer = setTimeout(function() {
-      context.dispatch('autoLogout');
-    }, expiresIn);
-
-    if (token && userId) {
+    if (!!token && !!userId) {
+      // console.log("mooooooooooooooooooooo")
       context.commit('setUser', {
         token: token,
-        userId: userId
+        userId: userId,
+        is_superuser: is_superuser,
       });
     }
   },
-  logout(context) {
+  async logout(context) {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`http://127.0.0.1:8000/api/logout/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Token ${token}`,
+      },
+    });
+
+    const responseData = await response.json();
+    console.log(responseData);
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
-    localStorage.removeItem('tokenExpiration');
-
-    clearTimeout(timer);
+    localStorage.removeItem('is_superuser');
 
     context.commit('setUser', {
       token: null,
-      userId: null
+      userId: null,
+    });
+    context.dispatch('course/loadCourses', {
+      forceRefresh: true,
     });
   },
-  autoLogout(context) {
-    context.dispatch('logout');
-    context.commit('setAutoLogout');
-  }
 };

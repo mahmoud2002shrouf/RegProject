@@ -21,6 +21,11 @@ export default {
   },
   created() {
     this.$store.dispatch('tryLogin');
+     this.$store.dispatch('course/loadCourses',{
+      forceRefresh: true,
+    });
+     this.$store.dispatch('schedule/fetchschedule');
+    
   },
   watch: {
     didAutoLogout(curValue, oldValue) {

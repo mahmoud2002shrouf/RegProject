@@ -53,11 +53,13 @@ export default {
   },
   computed: {
     isLoggedIn() {
-      return this.$store.getters.isAuthenticated;
+      return this.$store.getters.issuber;
     },
+
 
     courses() {
       const courses = this.$store.getters['course/courses'];
+      console.log("this is th fuvking",courses)
 
       return courses;
     },

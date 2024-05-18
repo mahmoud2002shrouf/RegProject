@@ -3,6 +3,36 @@ from rest_framework import serializers
 from .models import CourseSchedule, Course,Student
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+
+
+class PrerequisiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'name']
+
+class StudentSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+
+    class Meta:
+        model = Student
+        fields = ['id', 'first_name', 'last_name']
+
+class CourseSerializerTow(serializers.ModelSerializer):
+    prerequisites = PrerequisiteSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Course
+        fields = ['id', 'code', 'name', 'description', 'prerequisites', 'instructor', 'capacity', 'scheduleId']
+
+
+class StudentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+
+    class Meta:
+        model = Student
+        fields = ['id', 'username']
+
 class CourseScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseSchedule

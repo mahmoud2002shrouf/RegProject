@@ -4,21 +4,44 @@
       <h1>
         <router-link to="/">Courses</router-link>
       </h1>
-      <div class="search-container">
-        <input type="search" class="search-input" placeholder="Search..." />
-        <magnify-icon class="search-icon" />
+      <div class="search-container" >
+        <input
+          type="search"
+          class="search-input"
+          placeholder="Search..."
+          v-model.trim="serachContent"
+          @keyup.enter="search"
+        />
+        <MagnifyIcon class="search-icon" @click="search" />
       </div>
 
       <ul>
         <li>
           <router-link to="/courses">All Cource</router-link>
         </li>
-         <li>
-          <router-link to="/schedule">schedule</router-link>
+        <li>
+          <router-link to="/schedule" v-if="isSuper">schedule</router-link>
         </li>
+        <div class="notification-container" v-show="!!isLoggedIn">
+          <button @click="toggleNotifications" class="bell-button">🔔</button>
+
+          <transition name="fade">
+            <div v-if="showNotifications" class="notification-list">
+              <div
+                v-for="notification in notifications"
+                :key="notification"
+                class="notification"
+              >
+                {{ notification }}
+              </div>
+            </div>
+          </transition>
+        </div>
+
         <li v-if="isLoggedIn">
-          <router-link to="/MyCource">My Cource</router-link>
+          <router-link to="/MyCource" v-if="!isSuper">My Cource</router-link>
         </li>
+
         <li v-else>
           <router-link to="/auth">Login</router-link>
         </li>
@@ -34,10 +57,20 @@
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue';
 
 export default {
+  data() {
+    return {
+      serachContent: null,
+      showNotifications: false,
+      notifications: [],
+    };
+  },
   components: { MagnifyIcon },
   computed: {
     isLoggedIn() {
       return this.$store.getters.isAuthenticated;
+    },
+    isSuper() {
+      return this.$store.getters.issuber;
     },
   },
   methods: {
@@ -45,6 +78,37 @@ export default {
       this.$store.dispatch('logout');
       this.$router.replace('/courses');
     },
+    search() {
+      if (this.serachContent !== null) {
+        this.$store.dispatch('course/search', {
+          searchContent: this.serachContent,
+        });
+        this.$router.replace('/search');
+      } else {
+        console.log('cc');
+      }
+    },
+    toggleNotifications() {
+      this.showNotifications = !this.showNotifications;
+    },
+    async getAllNot() {
+      const res = await fetch('http://localhost:8000/api/recent_courses/', {
+        method: 'GET',
+      });
+      const responseData = await res.json();
+      // const notif = [];
+
+      for (const key in responseData) {
+        const not = responseData[key];
+        console.log(responseData[key])
+        this.notifications.unshift(not);
+      }
+     console.log(this.notifications)
+
+    },
+  },
+  created() {
+    this.getAllNot();
   },
 };
 </script>
@@ -83,8 +147,65 @@ header a {
 .search-icon {
   position: absolute;
   right: 10px;
-  width: 24px; /* Adjust the size of the icon if needed */
+  width: 24px;
   height: 24px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+.icon {
+  position: absolute;
+  right: 10px;
+}
+.notification-container {
+  position: relative;
+  display: inline-block;
+}
+
+.bell-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  position: relative;
+}
+
+.notification-list {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 1px solid #ccc;
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+
+.notification {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+.notification:hover {
+  background-color: #ccc;
+  border: 1px solid white;
+}
+
+.notification:last-child {
+  border-bottom: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
 }
 
 a:active,

@@ -7,12 +7,16 @@ export default {
       roomNo: payload.roomNumber,
 
     };
+    const token=localStorage.getItem("token")
     const response = await fetch(
       `http://127.0.0.1:8000/api/course_schedule/add/`,
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+
+
         },
         body: JSON.stringify(newSchedule)
       }
@@ -51,7 +55,7 @@ export default {
   
     for (const key in responseData) {
       const schedule = {
-        id: key,
+        id: responseData[key].id,
         days: responseData[key].days,
         start_time: responseData[key].startTime,
         end_time: responseData[key].endTime,

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 User = get_user_model() 
 
 class Student(models.Model):
@@ -17,10 +19,11 @@ class Course(models.Model):
         related_name='course_prerequisites',
         blank=True
     )
-
     instructor = models.CharField(max_length=100)
     capacity = models.IntegerField()
     scheduleId = models.ForeignKey('CourseSchedule', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+
 
 class Prerequisite(models.Model):
     course = models.ForeignKey('Course', related_name='required_for', on_delete=models.CASCADE)
