@@ -10,7 +10,8 @@
 
     <section>
       <base-card>
-    
+    <h3 class="title">Research results</h3>
+      <hr >
         <div v-if="isLoading">
           <base-spinner></base-spinner>
         </div>
@@ -90,5 +91,13 @@ ul {
 .controls {
   display: flex;
   justify-content: space-between;
+}
+.title{
+  margin-left: 50px;
+}
+hr{
+  width: 400px;
+  margin-left: 10px;
+
 }
 </style>

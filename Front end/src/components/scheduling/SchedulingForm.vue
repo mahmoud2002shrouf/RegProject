@@ -2,6 +2,10 @@
   <form @submit.prevent="submitForm">
     <div class="form-control" :class="{ invalid: !day.isValid }">
       <label for="day">Day</label>
+      <div class="WeekDay">
+        <button v-for="day in weekDay" :key="day" type="button" @click="adds(day)">{{day}}</button>
+       
+      </div>
       <input
         type="text"
         id="day"
@@ -52,6 +56,7 @@ export default {
 
   data() {
     return {
+      weekDay: ['SUN', 'MON', 'TUE', 'WEN', 'THU', 'FRI', 'SAT'],
       day: {
         val: '',
         isValid: true,
@@ -75,6 +80,15 @@ export default {
   methods: {
     clearValidity(input) {
       this[input].isValid = true;
+    },
+    adds(day){
+      if(this.day.val===""){
+      this.day.val+=day
+
+      }else{
+      this.day.val+="-"+day
+
+      }
     },
     validateForm() {
       this.formIsValid = true;
@@ -113,8 +127,6 @@ export default {
       this.startTime.val = ' ';
       this.endTime.val = ' ';
       this.roomNumber.val = ' ';
-
-   
     },
   },
 };
@@ -194,6 +206,23 @@ select {
 select:focus {
   background-color: #f0e6fd;
   border-color: #3d008d;
+}
+.WeekDay {
+  display: flex;
+  justify-content: start;
+  flex-direction: row;
+}
+.WeekDay > button {
+  margin: 10px 10px 20px 0px;
+  padding: 5px;
+  background-color: white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  border: 1px solid black;
+}
+.WeekDay > button:hover {
+  background-color: rgba(63, 57, 57, 0.459);
 }
 
 .invalid input,

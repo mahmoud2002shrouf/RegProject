@@ -81,10 +81,16 @@ class Register(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            response_serializer = RegisterSerializer(user)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            token, created = Token.objects.get_or_create(user=user)
+            response_data = {
+                'token': token.key,
+                'userId': user.id,
+                'is_superuser': user.is_superuser
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 #تسجيل الدخول سواء طالب او ادمن
 class Login(APIView):

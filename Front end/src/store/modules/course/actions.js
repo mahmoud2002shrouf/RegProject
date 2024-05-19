@@ -191,7 +191,7 @@ export default {
   })
   console.log(response)
   if (response.ok) {
-    this.$router.replace('/MyCource')
+    // this.$router.push('/MyCource')
   }
   if (!response.ok) {
     const error = new Error(response.message ||"maybe you have already registered for this course or there is a scheduling conflict");

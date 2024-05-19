@@ -7,9 +7,9 @@
             v-for="sc in schedule"
             :key="sc.id"
             :day="sc.days"
-            :room="sc.room_number"
-            :start="sc.start_time"
-            :end="sc.end_time"
+            :room="sc.room_number || sc.roomNo"
+            :start="sc.start_time ||sc.startTime"
+            :end="sc.end_time ||sc.endTime"
           
           ></ScheduleItem>
         </ul>

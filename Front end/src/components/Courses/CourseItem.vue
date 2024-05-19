@@ -11,9 +11,7 @@
         mode="outline"
         link
         @click="addCourceForStudant"
-        :to="myCource"
-
-        v-show="(!isSuper && isauth)&&myCources"
+        v-show="!isSuper && isauth && myCources"
         >Add</base-button
       >
       <base-button link :to="courceDetailsLink">View Details</base-button>
@@ -23,21 +21,12 @@
 
 <script>
 export default {
-  props: ['id', 'course_code', 'name','my'],
+  props: ['id', 'course_code', 'name', 'my'],
   computed: {
-    myCource() {
-      if(this.error!==null){
-      return '/' + 'MyCource';
-
-      }else{
-        return false
-      }
-
-    },
+ 
     courceDetailsLink() {
       return 'courses' + '/' + this.id;
     },
-
 
     isSuper() {
       // console.log('suuuuper', this.$store.getters.issuber);
@@ -45,16 +34,16 @@ export default {
     },
     isauth() {
       // console.log('suuuuper', this.$store.getters.isAuthenticated);
-      console.log('thats',this.isSuper && this.$store.getters.isAuthenticated)
+      // console.log('thats',this.isSuper && this.$store.getters.isAuthenticated)
       return this.$store.getters.isAuthenticated;
     },
-    myCources(){
-      if(this.my===true){
-        return !this.my
-      }else{
-        return true
+    myCources() {
+      if (this.my === true) {
+        return !this.my;
+      } else {
+        return true;
       }
-    }
+    },
   },
   data() {
     return {
@@ -62,18 +51,20 @@ export default {
     };
   },
   methods: {
-   async addCourceForStudant() {
+    async addCourceForStudant() {
+      this.error=null;
       try {
-       await this.$store.dispatch('course/addCourceForStudant', {
+        await this.$store.dispatch('course/addCourceForStudant', {
           student_id: localStorage.getItem('userId'),
           course_id: this.id,
         });
+        this.$router.push("/MyCource");
       } catch (error) {
         this.error = error.message || 'Something went wrong!';
-        console.log("eeeeeeeeeeeeeeeeeeee",this.error)
+        console.log('eeeeeeeeeeeeeeeeeeee', this.error);
       }
     },
-     
+
     handleError() {
       this.error = null;
     },
