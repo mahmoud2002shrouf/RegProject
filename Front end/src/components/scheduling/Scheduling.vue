@@ -13,6 +13,7 @@ import SchedulingForm from '../../components/scheduling/SchedulingForm.vue';
 import allScheduling from './allScheduling.vue';
 
 export default {
+  
   components: {
     SchedulingForm,
     allScheduling,
@@ -22,5 +23,6 @@ export default {
       this.$store.dispatch('schedule/addSchedule', data);
     },
   },
+
 };
 </script>

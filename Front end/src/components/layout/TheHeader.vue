@@ -1,10 +1,16 @@
 <template>
+  <base-dialog :show="!!error" title="An error occurred" @close="handleError">
+    <p>{{ error }}</p>
+  </base-dialog>
+  <base-dialog :show="isLoading" title="Authenticating..." fixed>
+    <base-spinner></base-spinner>
+  </base-dialog>
   <header>
     <nav>
       <h1>
         <router-link to="/">Courses</router-link>
       </h1>
-      <div class="search-container" >
+      <div class="search-container">
         <input
           type="search"
           class="search-input"
@@ -26,13 +32,16 @@
           <button @click="toggleNotifications" class="bell-button">🔔</button>
 
           <transition name="fade">
-            <div v-if="showNotifications" class="notification-list">
+            <div v-show="showNotifications" class="notification-list">
               <div
                 v-for="notification in notifications"
                 :key="notification"
                 class="notification"
               >
                 {{ notification }}
+              </div>
+              <div v-if="notifications.length === 0">
+                <p>You not have any notification</p>
               </div>
             </div>
           </transition>
@@ -62,6 +71,8 @@ export default {
       serachContent: null,
       showNotifications: false,
       notifications: [],
+      isLoading: false,
+      error: null,
     };
   },
   components: { MagnifyIcon },
@@ -74,9 +85,19 @@ export default {
     },
   },
   methods: {
-    logout() {
-      this.$store.dispatch('logout');
-      this.$router.replace('/courses');
+    async logout() {
+      this.isLoading = true;
+      try {
+        await this.$store.dispatch('logout');
+        this.$router.replace('/courses');
+      } catch (err) {
+        this.error = err.message;
+      }
+      setTimeout(() => {
+                this.$router.replace('/auth');
+
+        this.isLoading = false;
+      }, 300);
     },
     search() {
       if (this.serachContent !== null) {
@@ -100,11 +121,13 @@ export default {
 
       for (const key in responseData) {
         const not = responseData[key];
-        console.log(responseData[key])
+        console.log(responseData[key]);
         this.notifications.unshift(not);
       }
-     console.log(this.notifications)
-
+      console.log(this.notifications);
+    },
+    handleError() {
+      this.error = null;
     },
   },
   created() {

@@ -28,10 +28,9 @@ export default {
         email: payload.email,
         password: payload.password,
         username: payload.username,
-        // returnSecureToken: true,
       }),
     });
-
+3
     const responseData = await response.json();
     console.log(responseData);
 

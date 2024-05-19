@@ -113,7 +113,7 @@ export default {
           this.$router.push('/courses');
         } else {
           await this.$store.dispatch('signup', actionPayload);
-          this.mode='signup'
+          this.$router.push('/courses');
         }
       } catch (err) {
         this.error = err.message || 'Failed to authenticate, try later.';
