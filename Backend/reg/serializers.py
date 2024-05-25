@@ -20,7 +20,6 @@ class StudentSerializer(serializers.ModelSerializer):
 
 class CourseSerializerTow(serializers.ModelSerializer):
     prerequisites = PrerequisiteSerializer(many=True, read_only=True)
-
     class Meta:
         model = Course
         fields = ['id', 'code', 'name', 'description', 'prerequisites', 'instructor', 'capacity', 'scheduleId']
@@ -61,7 +60,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password']
 
     def create(self, validated_data):
-        # Securely set the password
         user = User(
             username=validated_data['username'],
             email=validated_data['email']
@@ -69,7 +67,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
 
-        # Create a Student associated with this user
         Student.objects.create(user=user)
 
         return user
