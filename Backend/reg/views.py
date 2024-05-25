@@ -8,11 +8,11 @@ from rest_framework import status
 from django.db.models import Q
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
 from .permissions import IsSuperUser  
 from .models import Course, StudentRegistration, Student,CourseSchedule
 from django.utils import timezone
 from datetime import timedelta
-
 
 #اضافة مواعيد 
 @api_view(['POST'])
@@ -54,17 +54,13 @@ def get_course_by_id(request, course_id):
     except Course.DoesNotExist:
         return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    # Serialize the course data, including prerequisites
     course_serializer = CourseSerializerTow(course)
     
-    # Get the students registered for this course
     registered_students = StudentRegistration.objects.filter(courseId=course).select_related('studentId__user')
     students = [registration.studentId for registration in registered_students]
     
-    # Serialize the student data
     student_serializer = StudentSerializer(students, many=True)
     
-    # Prepare the response data
     response_data = {
         'course': course_serializer.data,
         'registered_students': student_serializer.data,
@@ -147,7 +143,7 @@ def register_course_for_student(request):
     course_id = request.data.get('course_id')
     student_id = request.data.get('student_id')
 
-    # تحقق من وجود الطالب ومطابقة معرف المستخدم
+    # تحقق من وجود الطالب ومطابقة الاي دي 
     try:
         student = Student.objects.get(user_id=student_id)
     except Student.DoesNotExist:
@@ -162,11 +158,11 @@ def register_course_for_student(request):
     except Course.DoesNotExist:
         return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # تحقق مما إذا كان الكورس مسجل بالفعل
+    # تحقق مما إذا كان الكورس مسجل 
     if StudentRegistration.objects.filter(studentId=student, courseId=course).exists():
         return Response({'error': 'Course already registered.'}, status=status.HTTP_409_CONFLICT)
 
-    # تحقق من استيفاء المتطلبات السابقة
+    # تحقق من انهاء المتطلبات السابقة
     prerequisites = course.prerequisites.all()
     completed_courses_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId_id', flat=True)
     completed_courses = Course.objects.filter(id__in=completed_courses_ids)
@@ -201,17 +197,11 @@ def get_student_courses(request):
     student_courses = StudentRegistration.objects.filter(studentId=student).select_related('courseId')
     courses = [registration.courseId for registration in student_courses]
 
-    # تسلسل الكورسات
     serializer = CourseSerializer(courses, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 #جلب فقط الكورسات التي انهى الطالب متطلباتها
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Student, StudentRegistration, Course
-from .serializers import CourseSerializer
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
