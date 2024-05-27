@@ -24,9 +24,7 @@
           Please enter a valid email and password (must be at least 6 characters
           long).
         </p>
-        <!-- <router-link :to="paths"> -->
         <base-button>{{ submitButtonCaption }}</base-button>
-        <!-- </router-link> -->
         <base-button type="button" mode="flat" @click="switchAuthMode">{{
           switchModeButtonCaption
         }}</base-button>

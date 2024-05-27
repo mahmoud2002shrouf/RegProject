@@ -30,7 +30,6 @@ export default {
         username: payload.username,
       }),
     });
-3
     const responseData = await response.json();
     console.log(responseData);
 
@@ -59,10 +58,8 @@ export default {
     const userId = localStorage.getItem('userId');
     const is_superuser =
       localStorage.getItem('is_superuser') === 'true' ? true : false;
-    // console.log("pppppppppppppppppppp",is_superuser )
 
     if (!!token && !!userId) {
-      // console.log("mooooooooooooooooooooo")
       context.commit('setUser', {
         token: token,
         userId: userId,
