@@ -66,7 +66,7 @@
         @blur="clearValidity('prerequisites')"
       >
         <option v-for="co in getAllCource" :key="co" :value="co.id">
-          Name : {{ co.name }} - code : {{ co.courceCode }} - id : {{ co.id }} 
+          Name : {{ co.name }} - code : {{ co.courceCode }} 
         </option>
 
       </select>

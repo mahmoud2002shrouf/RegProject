@@ -10,13 +10,6 @@ class PrerequisiteSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['id', 'name']
 
-class StudentSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source='user.first_name')
-    last_name = serializers.CharField(source='user.last_name')
-
-    class Meta:
-        model = Student
-        fields = ['id', 'first_name', 'last_name']
 
 class CourseSerializerTow(serializers.ModelSerializer):
     prerequisites = PrerequisiteSerializer(many=True, read_only=True)
@@ -36,6 +29,8 @@ class CourseScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseSchedule
         fields = '__all__'
+
+
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -85,10 +80,8 @@ class LoginSerializer(serializers.Serializer):
         if username and password:
             user = authenticate(username=username, password=password)
             if user:
-                if user.is_active:
-                    data['user'] = user
-                else:
-                    raise serializers.ValidationError("User account is disabled.")
+                 data['user'] = user
+                
             else:
                 raise serializers.ValidationError("Unable to log in with provided credentials.")
         else:

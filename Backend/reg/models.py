@@ -6,6 +6,7 @@ User = get_user_model()
 
 class Student(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE, null=True)
+    
 
 
 class Course(models.Model):
@@ -18,6 +19,7 @@ class Course(models.Model):
         symmetrical=False,
         related_name='course_prerequisites',
         blank=True
+        
     )
     instructor = models.CharField(max_length=100)
     capacity = models.IntegerField()
@@ -33,7 +35,7 @@ class CourseSchedule(models.Model):
     days = models.CharField(max_length=50)
     startTime = models.TimeField()
     endTime = models.TimeField()
-    roomNo = models.CharField(max_length=10)
+    roomNo = models.CharField(max_length=10,)
 
 class StudentRegistration(models.Model):
     studentId = models.ForeignKey('Student', on_delete=models.CASCADE)

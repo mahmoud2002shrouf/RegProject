@@ -38,12 +38,16 @@ def get_all_course_schedules(request):
     schedules = CourseSchedule.objects.all()
     serializer = CourseScheduleSerializer(schedules, many=True)
     return Response(serializer.data)
+
+
+
 #جلب كل الكورسات
 @api_view(['GET'])
 def get_all_courses(request):
     courses = Course.objects.all()
-    serializer = CourseSerializer(courses, many=True)
+    serializer = CourseSerializer(courses,many=True)
     return Response(serializer.data)
+
 #جلب كورس معين
 
 
@@ -55,6 +59,7 @@ def get_course_by_id(request, course_id):
         return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
     
     course_serializer = CourseSerializerTow(course)
+    
     
     registered_students = StudentRegistration.objects.filter(courseId=course).select_related('studentId__user')
     students = [registration.studentId for registration in registered_students]
@@ -164,13 +169,13 @@ def register_course_for_student(request):
 
     # تحقق من انهاء المتطلبات السابقة
     prerequisites = course.prerequisites.all()
-    completed_courses_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId_id', flat=True)
+    completed_courses_ids = StudentRegistration.objects.filter(studentId=student).values_list('courseId_id', flat=True)#كورسات الطالب
     completed_courses = Course.objects.filter(id__in=completed_courses_ids)
     if not all(prerequisite in completed_courses for prerequisite in prerequisites):
         return Response({'error': 'Prerequisites not met.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # تحقق من تضارب المواعيد
-    existing_schedules = CourseSchedule.objects.filter(course__studentregistration__studentId=student)
+    existing_schedules = CourseSchedule.objects.filter(course__studentregistration__studentId=student)#كل الماعيد الي مسجلها
     new_course_schedule = course.scheduleId
     for schedule in existing_schedules:
         if (new_course_schedule.days == schedule.days and

@@ -31,16 +31,16 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-   'reg',
+    'reg',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
-    'rest_framework',
-    'rest_framework.authtoken',
+    'corsheaders',#ربط الباك بالفرونت
+    'rest_framework',#مكتبه تساعد في سهولة التعامل بين الباك  و الداتا بيس و سهولة ارجاع الرد(json)
+    'rest_framework.authtoken',#شغله في الاوث
     
     
 ]
@@ -62,6 +62,7 @@ ROOT_URLCONF = 'CourceReg.urls'
 # settings.py
 
 # settings.py
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -101,7 +102,7 @@ WSGI_APPLICATION = 'CourceReg.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'regg',
+        'NAME': 'RegPro',
         'USER': 'root',
         'PASSWORD': 'M123456789',
         'HOST': 'localhost',
